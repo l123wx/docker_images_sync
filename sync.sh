@@ -22,10 +22,20 @@ fi
 
 failed_count=0
 failed_images=""
-while IFS= read -r image; do
+while IFS= read -r image_and_platform; do
+    # Check if platform information is present
+    if [[ "$image_and_platform" == *"--platform="* ]]; then
+        # Extract platform information and image name
+        image=$(echo "$image_and_platform" | sed -e "s/--platform=[^ ]*//g" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        platform_arg=$(echo "$image_and_platform" | grep -o -- "--platform=[^ ]*")
+    else
+        # No platform information
+        image="$image_and_platform"
+        platform_arg=""
+    fi
     # 拉取镜像
     set +e
-    docker pull "$image"
+    docker pull "$image" $platform_arg
     pull_status=$?
     if [ $pull_status -ne 0 ]; then
         echo "Error: Failed to pull image $image, continuing..."

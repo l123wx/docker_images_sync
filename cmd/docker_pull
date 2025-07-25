@@ -8,6 +8,36 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
+# Get operating system type
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+if [[ "$OS" == "darwin" ]]; then
+  OS="linux"  # Docker Desktop on macOS runs Linux containers
+fi
+
+# Get architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)
+    ARCH="amd64"
+    ;;
+  aarch64|arm64)
+    ARCH="arm64"
+    ;;
+  armv7*)
+    ARCH="arm/v7"
+    ;;
+  armv6*)
+    ARCH="arm/v6"
+    ;;
+  i386|i686)
+    ARCH="386"
+    ;;
+  *)
+    # 保持原样
+    ;;
+esac
+DOCKER_PLATFORM="$OS/$ARCH"
+
 # Initialize variables
 REGISTRY_URL=""
 REGISTRY_NS=""
@@ -83,7 +113,7 @@ popd > /dev/null
 
 # Write images.txt file
 echo "[record images] Writing tags to $IMAGES_DIR/images.txt"
-printf "%s\n" "$@" > "$IMAGES_DIR/images.txt"
+printf "%s --platform=$DOCKER_PLATFORM \n" "$@" > "$IMAGES_DIR/images.txt"
 
 # Execute git commit
 echo "[commit images] Start git commit:"
